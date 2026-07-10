@@ -1,3 +1,4 @@
 aiogram>=3.7,<4.0
-deep-translator>=1.11
+aiosqlite>=0.19
 python-dotenv>=1.0
+deep-translator>=1.11
