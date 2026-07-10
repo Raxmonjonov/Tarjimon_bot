@@ -6,7 +6,7 @@ import os
 from aiogram import Bot, Dispatcher, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.filters import CommandStart
+from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -19,12 +19,9 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 LANGUAGES = {
-    "uz": "🇺🇿 O'zbekcha",
-    "en": "🇬🇧 Inglizcha",
-    "ru": "🇷🇺 Ruscha",
-    "tr": "🇹🇷 Turkcha",
-    "ar": "🇸🇦 Arabcha",
-    "de": "🇩🇪 Nemischa",
+    "uz": "🇺🇿 O'zbek", "en": "🇬🇧 Ingliz", "ru": "🇷🇺 Rus", "tr": "🇹🇷 Turk",
+    "ar": "🇸🇦 Arab", "de": "🇩🇪 Nemis", "fr": "🇫🇷 Fransuz", "es": "🇪🇸 Ispan",
+    "zh-CN": "🇨🇳 Xitoy", "ko": "🇰🇷 Koreys",
 }
 
 
@@ -52,6 +49,17 @@ async def start(message: Message, state: FSMContext):
     )
 
 
+@dp.message(Command("help"))
+async def help_cmd(message: Message):
+    await message.answer(
+        "🌐 <b>Tarjimon Bot</b> — yordam\n\n"
+        "• Matn yuboring → til tanlang → tarjima\n"
+        "• Natijadan so'ng boshqa tilni tanlab, xuddi shu matnni qayta tarjima qilishingiz mumkin\n"
+        f"• {len(LANGUAGES)} ta til qo'llab-quvvatlanadi\n"
+        "• /start, /help"
+    )
+
+
 @dp.message(F.text)
 async def receive_text(message: Message, state: FSMContext):
     await state.update_data(text=message.text)
@@ -70,6 +78,7 @@ async def do_translate(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer("Avval tarjima qilinadigan matnni yuboring.")
         return
 
+    await callback.message.bot.send_chat_action(callback.message.chat.id, "typing")
     try:
         translated = await asyncio.to_thread(
             GoogleTranslator(source="auto", target=target).translate, text
@@ -78,10 +87,11 @@ async def do_translate(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer("❌ Tarjimada xatolik yuz berdi. Qayta urinib ko'ring.")
         return
 
+    # Matnni saqlab qolamiz — foydalanuvchi boshqa tilga ham tarjima qilishi mumkin.
     await callback.message.answer(
-        f"✅ <b>{LANGUAGES[target]}</b>:\n\n{html.escape(translated or '')}"
+        f"✅ <b>{LANGUAGES[target]}</b>:\n\n{html.escape(translated or '')}",
+        reply_markup=language_keyboard(),
     )
-    await state.clear()
 
 
 async def main():
