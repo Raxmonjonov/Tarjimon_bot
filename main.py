@@ -8,7 +8,6 @@ import html
 import logging
 import os
 import time
-from base64 import b64decode
 
 import aiosqlite
 from aiogram import Bot, Dispatcher, F, BaseMiddleware
@@ -91,9 +90,13 @@ async def add_user(user_id: int, username: str | None, full_name: str | None):
     try:
         async with aiosqlite.connect(DB_PATH) as db:
             await db.execute("""
-                INSERT OR REPLACE INTO users (user_id, username, full_name, last_active)
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                INSERT OR IGNORE INTO users (user_id, username, full_name)
+                VALUES (?, ?, ?)
             """, (user_id, username, full_name))
+            await db.execute("""
+                UPDATE users SET username = ?, full_name = ?, last_active = CURRENT_TIMESTAMP
+                WHERE user_id = ?
+            """, (username, full_name, user_id))
             await db.commit()
     except Exception as e:
         logger.error("User qo'shishda xato: %s", e)
